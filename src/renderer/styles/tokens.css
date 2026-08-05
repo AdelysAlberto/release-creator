@@ -1,0 +1,48 @@
+:root {
+  --color-bg-app: #e0e0e0;
+  --color-bg-card: #e8e8e8;
+  --color-bg-terminal: #3b3b3b;
+  --color-bg-terminal-header: #2f2f2f;
+  --color-terminal-text: #e0e0e0;
+  --color-terminal-system: #64b5f6;
+  --color-terminal-stderr: #ef5350;
+  --color-terminal-border: #007acc;
+
+  --color-primary-teal: #008b9b;
+  --color-primary-teal-hover: #00727f;
+  --color-primary-red: #a01010;
+  --color-primary-red-hover: #800b0b;
+
+  --color-input-bg: #636363;
+  --color-input-text: #ffffff;
+  --color-input-border: #4a4a4a;
+
+  --color-text-main: #222222;
+  --color-text-muted: #555555;
+  --color-border: #cccccc;
+
+  --font-family-base: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  --font-family-code: 'Fira Code', 'Consolas', 'Courier New', monospace;
+
+  --border-radius-sm: 4px;
+  --border-radius-md: 6px;
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-family-base);
+  background-color: var(--color-bg-app);
+  color: var(--color-text-main);
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}

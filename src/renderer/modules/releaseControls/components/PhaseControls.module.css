@@ -1,0 +1,109 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-top: auto;
+}
+
+.phaseSelectorGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background-color: var(--color-bg-card);
+  padding: 8px;
+  border-radius: var(--border-radius-sm);
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.phaseSelect {
+  width: 100%;
+  padding: 6px 10px;
+  background-color: var(--color-input-bg);
+  color: #ffffff;
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.buttonRow {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+.btnPrimary {
+  flex: 1;
+  padding: 10px;
+  background-color: var(--color-primary-teal);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btnPrimary:hover:not(:disabled) {
+  background-color: var(--color-primary-teal-hover);
+}
+
+.btnRetry {
+  padding: 10px;
+  background-color: #e67e22;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btnRetry:hover:not(:disabled) {
+  background-color: #d35400;
+}
+
+.btnDanger {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--color-primary-red);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btnDanger:hover:not(:disabled) {
+  background-color: var(--color-primary-red-hover);
+}
+
+.btnProceed {
+  width: 100%;
+  padding: 10px;
+  background-color: #007acc;
+  color: #ffffff;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+}
+
+.btnProceed:hover:not(:disabled) {
+  background-color: #005999;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

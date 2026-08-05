@@ -1,0 +1,38 @@
+{
+  "name": "release-creator",
+  "version": "1.0.0",
+  "description": "Herramienta de automatización de releases multi-repositorio para GitLab empresarial",
+  "main": "dist-electron/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "ELECTRON_DISABLE_SANDBOX=1 vite",
+    "build": "tsc --noEmit && vite build",
+    "lint": "eslint . --ext .ts,.tsx",
+    "fix": "eslint . --ext .ts,.tsx --fix",
+    "tsc": "tsc",
+    "preview": "vite preview",
+    "app:dev": "ELECTRON_DISABLE_SANDBOX=1 vite",
+    "app:build": "pnpm build && electron-builder",
+    "postinstall": "node node_modules/electron/install.js"
+  },
+  "dependencies": {
+    "axios": "^1.7.9",
+    "clsx": "^2.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "eslint": "^9.16.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3",
+    "vite-plugin-electron": "^0.29.0",
+    "vite-plugin-electron-renderer": "^0.14.6"
+  }
+}

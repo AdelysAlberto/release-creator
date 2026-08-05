@@ -1,0 +1,15 @@
+{
+  "appId": "com.sice.releasecreator",
+  "productName": "Release Creator",
+  "directories": {
+    "output": "release"
+  },
+  "files": [
+    "dist",
+    "dist-electron"
+  ],
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "category": "Development"
+  }
+}
