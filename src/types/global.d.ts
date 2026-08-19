@@ -70,8 +70,8 @@ export interface MrUrlsPayload {
 
 export interface ApiBridge {
   startRelease: (config: ReleaseConfig) => Promise<{ ok: boolean; error?: string }>;
-  proceedPhase2: () => Promise<{ ok: boolean; error?: string }>;
-  proceedPhase3: () => Promise<{ ok: boolean; error?: string }>;
+  proceedPhase2: (config: ReleaseConfig) => Promise<{ ok: boolean; error?: string }>;
+  proceedPhase3: (config: ReleaseConfig) => Promise<{ ok: boolean; error?: string }>;
   interruptRelease: () => Promise<{ ok: boolean; error?: string }>;
   triggerJenkinsDeploy: (payload: JenkinsDeployPayload) => Promise<JenkinsBuildResult>;
   onTerminalLog: (callback: (log: LogEntry) => void) => () => void;

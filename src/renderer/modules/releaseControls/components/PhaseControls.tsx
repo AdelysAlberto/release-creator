@@ -75,20 +75,20 @@ export const PhaseControls = () => {
       clearLogs();
       await window.api.startRelease(buildConfig());
     } else if (targetPhase === 2) {
-      await window.api.proceedPhase2();
+      await window.api.proceedPhase2(buildConfig());
     } else if (targetPhase === 3) {
-      await window.api.proceedPhase3();
+      await window.api.proceedPhase3(buildConfig());
     }
   };
 
   const handleProceedPhase2 = async () => {
     if (!window.api) return;
-    await window.api.proceedPhase2();
+    await window.api.proceedPhase2(buildConfig());
   };
 
   const handleProceedPhase3 = async () => {
     if (!window.api) return;
-    await window.api.proceedPhase3();
+    await window.api.proceedPhase3(buildConfig());
   };
 
   const handleInterrupt = async () => {

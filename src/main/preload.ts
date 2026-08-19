@@ -3,8 +3,8 @@ import type {JenkinsDeployPayload, LogEntry, MrUrlsPayload, ReleaseConfig, Statu
 
 const api = {
   startRelease: (config: ReleaseConfig) => ipcRenderer.invoke('release:start', config),
-  proceedPhase2: () => ipcRenderer.invoke('release:proceedPhase2'),
-  proceedPhase3: () => ipcRenderer.invoke('release:proceedPhase3'),
+  proceedPhase2: (config: ReleaseConfig) => ipcRenderer.invoke('release:proceedPhase2', config),
+  proceedPhase3: (config: ReleaseConfig) => ipcRenderer.invoke('release:proceedPhase3', config),
   interruptRelease: () => ipcRenderer.invoke('release:interrupt'),
   triggerJenkinsDeploy: (payload: JenkinsDeployPayload) => ipcRenderer.invoke('jenkins:deploy', payload),
 

@@ -27,6 +27,14 @@ export const createGitService = () => {
     return runCmd(`git checkout -b ${branchName}`, repoPath);
   };
 
+  const checkoutBranch = async (repoPath: string, branchName: string): Promise<Result<string>> => {
+    return runCmd(`git checkout ${branchName}`, repoPath);
+  };
+
+  const pullBranch = async (repoPath: string, branchName: string): Promise<Result<string>> => {
+    return runCmd(`git pull origin ${branchName}`, repoPath);
+  };
+
   const pushBranch = async (repoPath: string, branchName: string): Promise<Result<string>> => {
     return runCmd(`git push origin ${branchName}`, repoPath);
   };
@@ -48,6 +56,8 @@ export const createGitService = () => {
   return {
     cloneRepo,
     createAndCheckoutBranch,
+    checkoutBranch,
+    pullBranch,
     pushBranch,
     commitAndPush,
   };

@@ -8,7 +8,7 @@ import {createReleaseOrchestrator} from './modules/releaseEngine/releaseOrchestr
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const baseDir = path.resolve(__dirname, '../..');
+const baseDir = path.resolve(__dirname, '..');
 
 let mainWindow: BrowserWindow | null = null;
 const orchestrator = createReleaseOrchestrator(baseDir);
@@ -53,14 +53,14 @@ app.whenReady().then(() => {
     return orchestrator.startPhase1(mainWindow, config);
   });
 
-  ipcMain.handle('release:proceedPhase2', async () => {
+  ipcMain.handle('release:proceedPhase2', async (_, config: ReleaseConfig) => {
     console.log('[MAIN] IPC Event release:proceedPhase2 recibido');
-    return orchestrator.startPhase2(mainWindow);
+    return orchestrator.startPhase2(mainWindow, config);
   });
 
-  ipcMain.handle('release:proceedPhase3', async () => {
+  ipcMain.handle('release:proceedPhase3', async (_, config: ReleaseConfig) => {
     console.log('[MAIN] IPC Event release:proceedPhase3 recibido');
-    return orchestrator.startPhase3(mainWindow);
+    return orchestrator.startPhase3(mainWindow, config);
   });
 
   ipcMain.handle('release:interrupt', async () => {

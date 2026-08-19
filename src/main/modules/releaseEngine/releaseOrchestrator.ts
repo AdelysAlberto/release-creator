@@ -46,6 +46,19 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     return snapshotEnabled ? `${version}-SNAPSHOT` : version;
   };
 
+  // Embeds the GitLab token in an HTTP URL so git clone/push authenticates automatically
+  const injectToken = (url: string, token?: string): string => {
+    if (!token) return url;
+    try {
+      const parsed = new URL(url);
+      parsed.username = 'oauth2';
+      parsed.password = token;
+      return parsed.toString();
+    } catch {
+      return url;
+    }
+  };
+
   const emitStatus = (window: BrowserWindow | null, message: string) => {
     const payload: StatusPayload = {
       currentPhase: state.currentPhase,
@@ -61,13 +74,13 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     terminalStream.emitLog(window, text, stream);
   };
 
-  const ensureRepoCloned = async (gitlabUrl: string, projId: string, reposDir: string): Promise<string> => {
+  const ensureRepoCloned = async (gitlabUrl: string, projId: string, reposDir: string, token?: string): Promise<string> => {
     const folderName = projId.replace(/\//g, '__');
     const repoPath = path.join(reposDir, folderName);
     if (!fs.existsSync(repoPath)) {
       const detailsRes = await gitLabService.getProjectDetails(gitlabUrl, projId);
-      const httpUrl = detailsRes.ok ? detailsRes.value.httpUrlToRepo : `${gitlabUrl}/${projId}.git`;
-      await gitService.cloneRepo(httpUrl, repoPath);
+      const rawUrl = detailsRes.ok ? detailsRes.value.httpUrlToRepo : `${gitlabUrl}/${projId}.git`;
+      await gitService.cloneRepo(injectToken(rawUrl, token), repoPath);
     }
     return repoPath;
   };
@@ -132,7 +145,8 @@ export const createReleaseOrchestrator = (baseDir: string) => {
       });
 
       log(window, `\nClonando [${details.name}] desde ${details.httpUrlToRepo}...`);
-      const cloneRes = await gitService.cloneRepo(details.httpUrlToRepo, repoPath);
+      const cloneUrl = injectToken(details.httpUrlToRepo, config.gitlabToken);
+      const cloneRes = await gitService.cloneRepo(cloneUrl, repoPath);
       if (!cloneRes.ok) {
         log(window, `Aviso en clonado para ${normId}: ${cloneRes.error}`, 'stderr');
       } else {
@@ -185,7 +199,13 @@ export const createReleaseOrchestrator = (baseDir: string) => {
       const branchName = `feature/UpdateVersionSprint${config.releaseVersion}`;
       log(window, `Creando rama ${branchName} y realizando commit/push...`);
       await gitService.createAndCheckoutBranch(repoPath, branchName);
-      await gitService.commitAndPush(repoPath, `chore: release version ${config.releaseVersion}`, branchName);
+      const pushLibRes = await gitService.commitAndPush(repoPath, `chore: release version ${config.releaseVersion}`, branchName);
+      if (!pushLibRes.ok) {
+        log(window, `❌ Push fallido para librería ${libId}: ${pushLibRes.error}`, 'stderr');
+        log(window, `⚠ La MR apuntará a una rama que no existe en remoto. Verifica el token GitLab.`, 'stderr');
+      } else {
+        log(window, `✅ Rama ${branchName} publicada en remoto`);
+      }
 
       const mrRes = await gitLabService.createMergeRequest({
         gitlabUrl: config.gitlabUrl,
@@ -224,13 +244,23 @@ export const createReleaseOrchestrator = (baseDir: string) => {
 
       if (depRelations.length > 0) {
         log(window, `Regenerando pnpm-lock.yaml (rm -rf node_modules pnpm-lock.yaml && pnpm i)...`);
-        await packageService.refreshLockfile(repoPath, (msg) => log(window, msg));
+        const lockRes = await packageService.refreshLockfile(repoPath, (msg) => log(window, msg));
+        if (!lockRes.ok) {
+          log(window, `⚠ pnpm install falló (puede que la librería no esté publicada aún): ${lockRes.error}`, 'stderr');
+          log(window, `ℹ Continuando con los cambios de package.json sin lockfile actualizado.`, 'system');
+        }
       }
 
       const branchName = `feature/UpdateVersionSprint${config.releaseVersion}`;
       log(window, `Creando rama ${branchName} y realizando commit/push...`);
       await gitService.createAndCheckoutBranch(repoPath, branchName);
-      await gitService.commitAndPush(repoPath, `chore: release version ${config.releaseVersion}`, branchName);
+      const pushProjRes = await gitService.commitAndPush(repoPath, `chore: release version ${config.releaseVersion}`, branchName);
+      if (!pushProjRes.ok) {
+        log(window, `❌ Push fallido para ${projId}: ${pushProjRes.error}`, 'stderr');
+        log(window, `⚠ La MR apuntará a una rama que no existe en remoto. Verifica el token GitLab.`, 'stderr');
+      } else {
+        log(window, `✅ Rama ${branchName} publicada en remoto`);
+      }
 
       const mrRes = await gitLabService.createMergeRequest({
         gitlabUrl: config.gitlabUrl,
@@ -282,19 +312,30 @@ export const createReleaseOrchestrator = (baseDir: string) => {
 
     const reposDir = path.resolve(baseDir, 'repositories');
     for (const projId of activeConfig.projectIds) {
-      const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, projId, reposDir);
+      const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, projId, reposDir, activeConfig.gitlabToken);
 
-      log(window, `\nCreando rama local ${releaseBranchName} en [${projId}]...`);
+      log(window, `\n--- [${projId}] ---`, 'system');
+
+      log(window, `Cambiando a develop y actualizando...`);
+      await gitService.checkoutBranch(repoPath, 'develop');
+      const pullRes = await gitService.pullBranch(repoPath, 'develop');
+      if (!pullRes.ok) {
+        log(window, `⚠ Pull de develop falló: ${pullRes.error}`, 'stderr');
+      } else {
+        log(window, `✅ develop actualizado`);
+      }
+
+      log(window, `Creando rama ${releaseBranchName} desde develop...`);
       const checkoutRes = await gitService.createAndCheckoutBranch(repoPath, releaseBranchName);
-      if (checkoutRes.ok) {
-        log(window, `Rama local ${releaseBranchName} lista en ${projId}`);
+      if (!checkoutRes.ok) {
+        log(window, `⚠ ${checkoutRes.error}`, 'stderr');
       }
 
       log(window, `Subiendo rama a GitLab (git push origin ${releaseBranchName})...`);
       const pushRes = await gitService.pushBranch(repoPath, releaseBranchName);
 
       if (pushRes.ok) {
-        log(window, `✅ Rama ${releaseBranchName} subida exitosamente a GitLab para [${projId}]`, 'system');
+        log(window, `✅ Rama ${releaseBranchName} subida exitosamente a GitLab`, 'system');
       } else {
         log(window, `⚠️ Aviso en push para [${projId}]: ${pushRes.error}`, 'stderr');
       }
@@ -335,7 +376,7 @@ export const createReleaseOrchestrator = (baseDir: string) => {
 
     // 1. Librerías Primero
     for (const libId of libProjects) {
-      const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, libId, reposDir);
+      const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, libId, reposDir, activeConfig.gitlabToken);
       log(window, `\n--- Bumping Librería: ${libId} a ${nextVersion} ---`, 'system');
 
       const updateVerRes = await packageService.updateVersion(repoPath, nextVersion);
@@ -375,7 +416,7 @@ export const createReleaseOrchestrator = (baseDir: string) => {
 
     // 2. Proyectos Dependientes y Resto
     for (const projId of nonLibProjects) {
-      const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, projId, reposDir);
+      const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, projId, reposDir, activeConfig.gitlabToken);
       log(window, `\n--- Bumping Proyecto: ${projId} a ${nextVersion} ---`, 'system');
 
       const updateVerRes = await packageService.updateVersion(repoPath, nextVersion);
