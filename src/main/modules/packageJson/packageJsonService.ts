@@ -1,8 +1,8 @@
+import {exec} from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { exec } from 'node:child_process';
-import { promisify } from 'node:util';
-import { Result, ok, err } from '../../../shared/utils/resultUtils.js';
+import {promisify} from 'node:util';
+import {Result, err, ok} from '../../../shared/utils/resultUtils.js';
 
 const execAsync = promisify(exec);
 
@@ -103,14 +103,34 @@ export const createPackageJsonService = () => {
     return executeCommand(repoPath, cmd, onLog);
   };
 
-  const buildAndPublishLibrary = async (repoPath: string, onLog?: (line: string) => void): Promise<Result<string>> => {
-    const buildRes = await executeCommand(repoPath, 'pnpm build:lib', onLog);
+  const buildAndPublishLibrary = async (
+    repoPath: string,
+    buildScript: string,
+    publishScript: string,
+    onLog?: (line: string) => void
+  ): Promise<Result<string>> => {
+    const buildRes = await executeCommand(repoPath, buildScript, onLog);
     if (!buildRes.ok) return buildRes;
 
-    const publishRes = await executeCommand(repoPath, 'pnpm build:prod', onLog);
+    const publishRes = await executeCommand(repoPath, publishScript, onLog);
     if (!publishRes.ok) return publishRes;
 
     return ok('Librería compilada y publicada exitosamente.');
+  };
+
+  const buildAndPublishSnapshot = async (
+    repoPath: string,
+    buildScript: string,
+    publishScript: string,
+    onLog?: (line: string) => void
+  ): Promise<Result<string>> => {
+    const buildRes = await executeCommand(repoPath, buildScript, onLog);
+    if (!buildRes.ok) return buildRes;
+
+    const publishRes = await executeCommand(repoPath, publishScript, onLog);
+    if (!publishRes.ok) return publishRes;
+
+    return ok('Librería compilada y publicada como SNAPSHOT exitosamente.');
   };
 
   return {
@@ -121,5 +141,6 @@ export const createPackageJsonService = () => {
     executeCommand,
     refreshLockfile,
     buildAndPublishLibrary,
+    buildAndPublishSnapshot,
   };
 };

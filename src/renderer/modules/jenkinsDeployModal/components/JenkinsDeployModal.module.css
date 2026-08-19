@@ -1,0 +1,174 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--color-bg-card);
+  border-radius: var(--border-radius-md);
+  padding: var(--spacing-lg);
+  width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--spacing-sm);
+}
+
+.title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.jobName {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: var(--font-family-code);
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  border-bottom: 2px solid var(--color-border);
+}
+
+.tab,
+.tabActive {
+  padding: 6px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  margin-bottom: -2px;
+  color: var(--color-text-muted);
+  border-radius: var(--border-radius-sm) var(--border-radius-sm) 0 0;
+}
+
+.tabActive {
+  color: var(--color-primary-teal);
+  border-bottom-color: var(--color-primary-teal);
+}
+
+.tab:hover {
+  color: var(--color-text-main);
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+.input {
+  width: 100%;
+  padding: 6px 10px;
+  background-color: var(--color-input-bg);
+  color: var(--color-input-text);
+  border: 1px solid var(--color-input-border);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-family: var(--font-family-code);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--color-primary-teal);
+}
+
+.input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.statusBadge {
+  padding: 6px 10px;
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.status_running {
+  background-color: rgba(0, 139, 155, 0.15);
+  color: var(--color-primary-teal);
+}
+
+.status_success {
+  background-color: rgba(76, 175, 80, 0.15);
+  color: #2e7d32;
+}
+
+.status_failure {
+  background-color: rgba(239, 83, 80, 0.15);
+  color: var(--color-primary-red);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding-top: var(--spacing-xs);
+  border-top: 1px solid var(--color-border);
+}
+
+.btnClose {
+  padding: 7px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background-color: transparent;
+  color: var(--color-text-muted);
+}
+
+.btnClose:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+
+.btnDeploy {
+  padding: 7px 20px;
+  border: none;
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  background-color: var(--color-primary-teal);
+  color: #ffffff;
+}
+
+.btnDeploy:hover:not(:disabled) {
+  background-color: var(--color-primary-teal-hover);
+}
+
+.btnDeploy:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

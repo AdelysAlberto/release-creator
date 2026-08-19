@@ -1,8 +1,9 @@
-import { useShallow } from 'zustand/react/shallow';
-import { useConfigStore } from '../configStore.js';
-import { DependencyTable } from './DependencyTable.js';
-import { t } from '../../../shared/i18n/i18n.js';
+import {useShallow} from 'zustand/react/shallow';
+import {t} from '../../../shared/i18n/i18n.js';
+import {useScriptConfigStore} from '../../scriptConfig/scriptConfigStore.js';
+import {useConfigStore} from '../configStore.js';
 import styles from './ConfigForm.module.css';
+import {DependencyTable} from './DependencyTable.js';
 
 export const ConfigForm = () => {
   const gitlabUrl = useConfigStore(useShallow((state) => state.gitlabUrl));
@@ -15,8 +16,16 @@ export const ConfigForm = () => {
   const setProjectIdsRaw = useConfigStore(useShallow((state) => state.setProjectIdsRaw));
   const setReleaseVersion = useConfigStore(useShallow((state) => state.setReleaseVersion));
 
+  const openModal = useScriptConfigStore(useShallow((s) => s.openModal));
+
   return (
     <div className={styles.container}>
+      <div className={styles.formHeader}>
+        <button type="button" className={styles.btnScriptConfig} onClick={openModal}>
+          ⚙ {t('btnScriptConfig')}
+        </button>
+      </div>
+
       <div className={styles.fieldGroup}>
         <label className={styles.label}>{t('gitlabProjectIds')}</label>
         <textarea

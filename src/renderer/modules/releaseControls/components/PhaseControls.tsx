@@ -1,9 +1,12 @@
-import { useEffect, useState } from 'react';
-import { useShallow } from 'zustand/react/shallow';
-import { useReleaseStore } from '../releaseStore.js';
-import { useConfigStore } from '../../configForm/configStore.js';
-import { useTerminalStore } from '../../terminalLog/terminalStore.js';
-import type { ReleaseConfig } from '../../../../types/global.d.ts';
+import {useEffect, useState} from 'react';
+import {useShallow} from 'zustand/react/shallow';
+import type {ReleaseConfig, ScriptConfig} from '../../../../types/global.d.ts';
+import {t} from '../../../shared/i18n/i18n.js';
+import {useConfigStore} from '../../configForm/configStore.js';
+import {useJenkinsDeployStore} from '../../jenkinsDeployModal/jenkinsDeployStore.js';
+import {useScriptConfigStore} from '../../scriptConfig/scriptConfigStore.js';
+import {useTerminalStore} from '../../terminalLog/terminalStore.js';
+import {useReleaseStore} from '../releaseStore.js';
 import styles from './PhaseControls.module.css';
 
 export const PhaseControls = () => {
@@ -20,6 +23,21 @@ export const PhaseControls = () => {
   const dependencies = useConfigStore(useShallow((state) => state.dependencies));
 
   const clearLogs = useTerminalStore(useShallow((state) => state.clearLogs));
+
+  const openJenkinsModal = useJenkinsDeployStore(useShallow((s) => s.openModal));
+
+  const scriptConfig = useScriptConfigStore(
+    useShallow(
+      (s): ScriptConfig => ({
+        libraryRequiresDeployFirst: s.libraryRequiresDeployFirst,
+        libraryBuildScript: s.libraryBuildScript,
+        libraryPublishScript: s.libraryPublishScript,
+        snapshotPublishScript: s.snapshotPublishScript,
+        projectBuildScript: s.projectBuildScript,
+        snapshotEnabled: s.snapshotEnabled,
+      })
+    )
+  );
 
   useEffect(() => {
     setSelectedPhase(currentPhase);
@@ -46,6 +64,7 @@ export const PhaseControls = () => {
       projectIds,
       dependencies,
       releaseVersion,
+      scriptConfig,
     };
   };
 
@@ -138,7 +157,6 @@ export const PhaseControls = () => {
           🔄 Reintentar
         </button>
       </div>
-
       <button
         type="button"
         className={styles.btnDanger}
@@ -146,6 +164,15 @@ export const PhaseControls = () => {
         onClick={handleInterrupt}
       >
         Interrumpir
+      </button>
+
+      <br />
+      <button
+        type="button"
+        className={styles.btnJenkins}
+        onClick={() => openJenkinsModal(releaseVersion)}
+      >
+        {t('btnJenkins')}
       </button>
     </div>
   );

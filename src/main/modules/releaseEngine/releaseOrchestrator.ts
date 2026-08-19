@@ -1,14 +1,14 @@
-import path from 'node:path';
+import type {BrowserWindow} from 'electron';
 import fs from 'node:fs';
-import type { BrowserWindow } from 'electron';
-import type { ReleaseConfig, StatusPayload, MrUrlItem } from '../../../types/global.d.ts';
-import { Result, ok, err } from '../../../shared/utils/resultUtils.js';
-import { createGitService } from '../git/gitService.js';
-import { createGitLabService } from '../gitlab/gitlabService.js';
-import { createPackageJsonService } from '../packageJson/packageJsonService.js';
-import { createFsCleanerService } from '../fsCleaner/fsCleanerService.js';
-import { createTerminalStreamService } from '../terminalStream/terminalStreamService.js';
-import { createObsidianReportService } from '../obsidianReport/obsidianReportService.js';
+import path from 'node:path';
+import {Result, err, ok} from '../../../shared/utils/resultUtils.js';
+import type {MrUrlItem, ReleaseConfig, StatusPayload} from '../../../types/global.d.ts';
+import {createFsCleanerService} from '../fsCleaner/fsCleanerService.js';
+import {createGitService} from '../git/gitService.js';
+import {createGitLabService} from '../gitlab/gitlabService.js';
+import {createObsidianReportService} from '../obsidianReport/obsidianReportService.js';
+import {createPackageJsonService} from '../packageJson/packageJsonService.js';
+import {createTerminalStreamService} from '../terminalStream/terminalStreamService.js';
 
 export interface OrchestratorState {
   config: ReleaseConfig | null;
@@ -34,15 +34,16 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     mrListPhase3: [],
   };
 
-  const getNextMinorSnapshot = (version: string): string => {
+  const getNextMinorVersion = (version: string, snapshotEnabled: boolean): string => {
     const cleanVer = version.replace(/-SNAPSHOT$/i, '');
     const parts = cleanVer.split('.');
     if (parts.length >= 2) {
       const major = parts[0];
       const minor = parseInt(parts[1], 10) + 1;
-      return `${major}.${minor}.0-SNAPSHOT`;
+      const base = `${major}.${minor}.0`;
+      return snapshotEnabled ? `${base}-SNAPSHOT` : base;
     }
-    return `${version}-SNAPSHOT`;
+    return snapshotEnabled ? `${version}-SNAPSHOT` : version;
   };
 
   const emitStatus = (window: BrowserWindow | null, message: string) => {
@@ -91,6 +92,7 @@ export const createReleaseOrchestrator = (baseDir: string) => {
       projectIds: normalizedProjectIds,
       dependencies: normalizedDependencies,
       releaseVersion: rawConfig.releaseVersion.trim(),
+      scriptConfig: rawConfig.scriptConfig,
     };
 
     state = {
@@ -162,13 +164,22 @@ export const createReleaseOrchestrator = (baseDir: string) => {
         log(window, `Error leyendo package.json en librería ${libId}: ${updateVerRes.error}`, 'stderr');
       }
 
-      log(window, `Ejecutando pnpm build:lib & pnpm build:prod...`);
-      const buildRes = await packageService.buildAndPublishLibrary(repoPath, (msg) => log(window, msg));
-      if (!buildRes.ok) {
-        state.status = 'error';
-        emitStatus(window, `Error en compilación/publicación de librería ${libId}`);
-        log(window, `❌ ERROR CRÍTICO EN LIBRERÍA: ${buildRes.error}`, 'stderr');
-        return err(buildRes.error);
+      if (config.scriptConfig.libraryRequiresDeployFirst) {
+        log(window, `Ejecutando ${config.scriptConfig.libraryBuildScript} & ${config.scriptConfig.libraryPublishScript}...`);
+        const buildRes = await packageService.buildAndPublishLibrary(
+          repoPath,
+          config.scriptConfig.libraryBuildScript,
+          config.scriptConfig.libraryPublishScript,
+          (msg) => log(window, msg)
+        );
+        if (!buildRes.ok) {
+          state.status = 'error';
+          emitStatus(window, `Error en compilación/publicación de librería ${libId}`);
+          log(window, `❌ ERROR CRÍTICO EN LIBRERÍA: ${buildRes.error}`, 'stderr');
+          return err(buildRes.error);
+        }
+      } else {
+        log(window, `ℹ Despliegue previo de librería omitido (deshabilitado en configuración).`, 'system');
       }
 
       const branchName = `feature/UpdateVersionSprint${config.releaseVersion}`;
@@ -308,10 +319,10 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     state.status = 'running';
     emitStatus(window, 'Iniciando Fase 3: Preparación de Nuevo Sprint (SNAPSHOT Bumping)...');
 
-    const nextSnapshot = getNextMinorSnapshot(activeConfig.releaseVersion);
+    const nextVersion = getNextMinorVersion(activeConfig.releaseVersion, activeConfig.scriptConfig.snapshotEnabled);
 
     log(window, '==================================================', 'system');
-    log(window, `🔄 INICIANDO FASE 3: BUMPING A NUEVO SNAPSHOT (${nextSnapshot})`, 'system');
+    log(window, `🔄 INICIANDO FASE 3: BUMPING A NUEVA VERSIÓN (${nextVersion})`, 'system');
     log(window, '==================================================', 'system');
 
     const reposDir = path.resolve(baseDir, 'repositories');
@@ -325,26 +336,33 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     // 1. Librerías Primero
     for (const libId of libProjects) {
       const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, libId, reposDir);
-      log(window, `\n--- Bumping Librería: ${libId} a ${nextSnapshot} ---`, 'system');
+      log(window, `\n--- Bumping Librería: ${libId} a ${nextVersion} ---`, 'system');
 
-      const updateVerRes = await packageService.updateVersion(repoPath, nextSnapshot);
+      const updateVerRes = await packageService.updateVersion(repoPath, nextVersion);
       if (updateVerRes.ok) {
         libraryNamesMap.set(libId, updateVerRes.value.name);
       }
 
-      log(window, `Compilando y publicando versión SNAPSHOT...`);
-      await packageService.buildAndPublishLibrary(repoPath, (msg) => log(window, msg));
+      if (activeConfig.scriptConfig.libraryRequiresDeployFirst) {
+        log(window, `Compilando y publicando versión nueva (${nextVersion})...`);
+        await packageService.buildAndPublishSnapshot(
+          repoPath,
+          activeConfig.scriptConfig.libraryBuildScript,
+          activeConfig.scriptConfig.snapshotPublishScript,
+          (msg) => log(window, msg)
+        );
+      }
 
-      const branchName = `feature/UpdateVersionSprint${nextSnapshot}`;
+      const branchName = `feature/UpdateVersionSprint${nextVersion}`;
       await gitService.createAndCheckoutBranch(repoPath, branchName);
-      await gitService.commitAndPush(repoPath, `chore: bump version to ${nextSnapshot}`, branchName);
+      await gitService.commitAndPush(repoPath, `chore: bump version to ${nextVersion}`, branchName);
 
       const mrRes = await gitLabService.createMergeRequest({
         gitlabUrl: activeConfig.gitlabUrl,
         projectIdOrPath: libId,
         sourceBranch: branchName,
         targetBranch: 'develop',
-        title: `#000000 [Release]: Update version to ${nextSnapshot}`,
+        title: `#000000 [Release]: Update version to ${nextVersion}`,
         labels: ['Release', 'Ready to Review'],
         reviewerName: 'CodeChecker',
         assigneeName: 'Adelys Belen',
@@ -358,17 +376,17 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     // 2. Proyectos Dependientes y Resto
     for (const projId of nonLibProjects) {
       const repoPath = await ensureRepoCloned(activeConfig.gitlabUrl, projId, reposDir);
-      log(window, `\n--- Bumping Proyecto: ${projId} a ${nextSnapshot} ---`, 'system');
+      log(window, `\n--- Bumping Proyecto: ${projId} a ${nextVersion} ---`, 'system');
 
-      const updateVerRes = await packageService.updateVersion(repoPath, nextSnapshot);
+      const updateVerRes = await packageService.updateVersion(repoPath, nextVersion);
       const repoName = updateVerRes.ok ? updateVerRes.value.name : projId;
 
       const depRelations = activeConfig.dependencies.filter((d) => d.projectId === projId);
       for (const rel of depRelations) {
         const libPackageName = libraryNamesMap.get(rel.libraryId);
         if (libPackageName) {
-          log(window, `Actualizando dependencia ${libPackageName} a versión ${nextSnapshot}...`);
-          await packageService.updateDependencyVersion(repoPath, libPackageName, nextSnapshot);
+          log(window, `Actualizando dependencia ${libPackageName} a versión ${nextVersion}...`);
+          await packageService.updateDependencyVersion(repoPath, libPackageName, nextVersion);
         }
       }
 
@@ -377,16 +395,16 @@ export const createReleaseOrchestrator = (baseDir: string) => {
         await packageService.refreshLockfile(repoPath, (msg) => log(window, msg));
       }
 
-      const branchName = `feature/UpdateVersionSprint${nextSnapshot}`;
+      const branchName = `feature/UpdateVersionSprint${nextVersion}`;
       await gitService.createAndCheckoutBranch(repoPath, branchName);
-      await gitService.commitAndPush(repoPath, `chore: bump version to ${nextSnapshot}`, branchName);
+      await gitService.commitAndPush(repoPath, `chore: bump version to ${nextVersion}`, branchName);
 
       const mrRes = await gitLabService.createMergeRequest({
         gitlabUrl: activeConfig.gitlabUrl,
         projectIdOrPath: projId,
         sourceBranch: branchName,
         targetBranch: 'develop',
-        title: `#000000 [Release]: Update version to ${nextSnapshot}`,
+        title: `#000000 [Release]: Update version to ${nextVersion}`,
         labels: ['Release', 'Ready to Review'],
         reviewerName: 'CodeChecker',
         assigneeName: 'Adelys Belen',
@@ -411,7 +429,7 @@ export const createReleaseOrchestrator = (baseDir: string) => {
     log(window, '\n📝 Generando reporte automático de Release en Obsidian...', 'system');
     const reportRes = await obsidianReportService.generateReport({
       config: activeConfig,
-      nextSnapshot,
+      nextSnapshot: nextVersion,
       mrListPhase1: state.mrListPhase1,
       mrListPhase3: state.mrListPhase3,
     });

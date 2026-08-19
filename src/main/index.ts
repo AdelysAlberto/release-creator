@@ -1,9 +1,10 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
-import path from 'node:path';
+import {app, BrowserWindow, ipcMain} from 'electron';
 import fs from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { createReleaseOrchestrator } from './modules/releaseEngine/releaseOrchestrator.js';
-import type { ReleaseConfig } from '../types/global.d.ts';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+import type {JenkinsDeployPayload, ReleaseConfig} from '../types/global.d.ts';
+import {createJenkinsService} from './modules/jenkins/jenkinsService.js';
+import {createReleaseOrchestrator} from './modules/releaseEngine/releaseOrchestrator.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,6 +12,7 @@ const baseDir = path.resolve(__dirname, '../..');
 
 let mainWindow: BrowserWindow | null = null;
 const orchestrator = createReleaseOrchestrator(baseDir);
+const jenkinsService = createJenkinsService();
 
 const getPreloadPath = () => {
   const mjsPath = path.join(__dirname, 'preload.mjs');
@@ -64,6 +66,11 @@ app.whenReady().then(() => {
   ipcMain.handle('release:interrupt', async () => {
     console.log('[MAIN] IPC Event release:interrupt recibido');
     return orchestrator.interrupt(mainWindow);
+  });
+
+  ipcMain.handle('jenkins:deploy', async (_, payload: JenkinsDeployPayload) => {
+    console.log('[MAIN] IPC Event jenkins:deploy recibido:', payload.branch, payload.environment);
+    return jenkinsService.triggerDeploy(mainWindow, payload);
   });
 
   app.on('activate', () => {

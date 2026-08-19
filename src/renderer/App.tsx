@@ -1,7 +1,9 @@
-import { TerminalConsole } from './modules/terminalLog/components/TerminalConsole.js';
-import { ConfigForm } from './modules/configForm/components/ConfigForm.js';
-import { PhaseControls } from './modules/releaseControls/components/PhaseControls.js';
 import styles from './App.module.css';
+import {ConfigForm} from './modules/configForm/components/ConfigForm.js';
+import {JenkinsDeployModal} from './modules/jenkinsDeployModal/components/JenkinsDeployModal.js';
+import {PhaseControls} from './modules/releaseControls/components/PhaseControls.js';
+import {ScriptConfigModal} from './modules/scriptConfig/components/ScriptConfigModal.js';
+import {TerminalConsole} from './modules/terminalLog/components/TerminalConsole.js';
 
 export const App = () => {
   return (
@@ -13,6 +15,8 @@ export const App = () => {
         <ConfigForm />
         <PhaseControls />
       </div>
+      <ScriptConfigModal />
+      <JenkinsDeployModal />
     </div>
   );
 };

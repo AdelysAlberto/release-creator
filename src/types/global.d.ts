@@ -4,12 +4,45 @@ export interface DependencyRelation {
   libraryId: string;
 }
 
+export interface ScriptConfig {
+  libraryRequiresDeployFirst: boolean;
+  libraryBuildScript: string;
+  libraryPublishScript: string;
+  snapshotPublishScript: string;
+  projectBuildScript: string;
+  snapshotEnabled: boolean;
+}
+
+export interface JenkinsConfig {
+  jenkinsUrl: string;
+  jenkinsUser: string;
+  jenkinsToken: string;
+  jenkinsJob: string;
+}
+
+export interface JenkinsDeployPayload {
+  branch: string;
+  environment: string;
+  jenkinsUrl: string;
+  jenkinsUser: string;
+  jenkinsToken: string;
+  jenkinsJob: string;
+}
+
+export interface JenkinsBuildResult {
+  ok: boolean;
+  result?: string;
+  buildUrl?: string;
+  error?: string;
+}
+
 export interface ReleaseConfig {
   gitlabUrl: string;
   gitlabToken?: string;
   projectIds: string[];
   dependencies: DependencyRelation[];
   releaseVersion: string;
+  scriptConfig: ScriptConfig;
 }
 
 export interface LogEntry {
@@ -40,6 +73,7 @@ export interface ApiBridge {
   proceedPhase2: () => Promise<{ ok: boolean; error?: string }>;
   proceedPhase3: () => Promise<{ ok: boolean; error?: string }>;
   interruptRelease: () => Promise<{ ok: boolean; error?: string }>;
+  triggerJenkinsDeploy: (payload: JenkinsDeployPayload) => Promise<JenkinsBuildResult>;
   onTerminalLog: (callback: (log: LogEntry) => void) => () => void;
   onStatusChange: (callback: (status: StatusPayload) => void) => () => void;
   onMrUrls: (callback: (payload: MrUrlsPayload) => void) => () => void;

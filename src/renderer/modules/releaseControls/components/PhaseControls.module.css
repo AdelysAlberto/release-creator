@@ -103,6 +103,23 @@
   background-color: #005999;
 }
 
+.btnJenkins {
+  width: 100%;
+  padding: 9px;
+  background-color: #3a3a3a;
+  color: #e0e0e0;
+  border: 1px solid #555;
+  border-radius: var(--border-radius-sm);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.btnJenkins:hover {
+  background-color: #4a4a4a;
+}
+
 button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
